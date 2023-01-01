@@ -89,7 +89,7 @@ class HandTracker:
                 use_lm=True,
                 lm_model="lite",
                 lm_score_thresh=0.5,
-                use_world_landmarks=False,
+                use_world_landmarks=True,
                 pp_model = DETECTION_POSTPROCESSING_MODEL,
                 solo=True,
                 xyz=False,

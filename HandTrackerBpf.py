@@ -78,7 +78,7 @@ class HandTrackerBpf:
                 use_lm=True,
                 lm_model="lite",
                 lm_score_thresh=0.5,
-                use_world_landmarks=False,
+                use_world_landmarks=True,
                 solo=False,
                 xyz=False,
                 crop=False,

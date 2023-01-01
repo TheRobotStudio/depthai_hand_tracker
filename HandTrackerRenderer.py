@@ -1,5 +1,28 @@
+import time
+
 import cv2
 import numpy as np
+
+from struct import *
+import struct
+import serial
+
+from mediapipe_utils import angle
+
+#from Angle import HandAngles
+
+# configure the serial connections (the parameters differs on the device you are connecting to)
+ser = serial.Serial(
+    port="COM15",
+    baudrate=115200,
+    parity=serial.PARITY_NONE,
+    stopbits=serial.STOPBITS_ONE,
+    bytesize=serial.EIGHTBITS,
+    xonxoff=False,
+    rtscts=False,
+    dsrdtr=False,
+    timeout=1
+)
 
 LINES_HAND = [[0,1],[1,2],[2,3],[3,4], 
             [0,5],[5,6],[6,7],[7,8],
@@ -52,6 +75,161 @@ class HandTrackerRenderer:
         return (x, y)
 
     def draw_hand(self, hand):
+
+        # Send hand info
+        #print(hand.landmarks[0, 0])
+        #print(hand.landmarks[0, 1])
+        #print(hand.norm_landmarks[1, 1], hand.norm_landmarks[1, 1], hand.norm_landmarks[1, 2])
+        #print(hand.world_landmarks[1,2])
+        # choose packing number of and size, e.g. 2h means 2 short integers (2 bytes), f means float
+        #packed_data = struct.pack('2h', hand.landmarks[0, 0], hand.landmarks[0, 1])
+
+        #packed_data = struct.pack('h', hand.landmarks[0, 0])
+
+        #sending integers works fine to the Arudino
+        # landmarks are 2D
+        # norm_landmarks are 3D but floats so need to do the angle calcs here and send results to the servos as commands
+        #packed_data = struct.pack('2f', hand.norm_landmarks[1, 0], hand.norm_landmarks[1, 1])
+
+        #ser.write(packed_data)
+
+        #ser.write(b"\n")
+
+        #angle = HandAngles.fingerAngles(hand.landmarks)
+
+        #finger = angle(hand.norm_landmarks[1, 0], hand.norm_landmarks[1, 1], hand.norm_landmarks[1, 2])
+        #a_joint = np.array([hand.norm_landmarks[7, 0], hand.norm_landmarks[7, 1], hand.norm_landmarks[7, 2]])
+        #b_joint = np.array([hand.norm_landmarks[6, 0], hand.norm_landmarks[6, 1], hand.norm_landmarks[6, 2]])
+        #c_joint = np.array([hand.norm_landmarks[5, 0], hand.norm_landmarks[5, 1], hand.norm_landmarks[5, 2]])
+        #finger = angle(a_joint, b_joint, c_joint)
+        #print(finger)
+
+        joint_xyz = np.zeros((21, 3))
+        for i in range(21):
+            joint_xyz[i] = ([hand.norm_landmarks[i, 0], hand.norm_landmarks[i, 1], hand.norm_landmarks[i, 2]])
+        # Create array with enough space for all calculated angles
+        joint_angles = np.zeros(23)
+
+        # First finger, fore or index
+        # Angles calculated correspond to knuckle flex, knuckle yaw and long tendon length for all fingers, note difference in knuckle yaw for little
+        joint_angles[0] = angle(joint_xyz[0], joint_xyz[5], joint_xyz[8])
+        joint_angles[1] = angle(joint_xyz[9], joint_xyz[5], joint_xyz[6])
+        joint_angles[2] = angle(joint_xyz[5], joint_xyz[6], joint_xyz[7])
+
+        # Second finger, middle
+        joint_angles[3] = angle(joint_xyz[0], joint_xyz[9], joint_xyz[12])
+        joint_angles[4] = angle(joint_xyz[13], joint_xyz[9], joint_xyz[10])
+        joint_angles[5] = angle(joint_xyz[9], joint_xyz[10], joint_xyz[11])
+
+        # Third finger, ring
+        joint_angles[6] = angle(joint_xyz[0], joint_xyz[13], joint_xyz[16])
+        joint_angles[7] = angle(joint_xyz[9], joint_xyz[13], joint_xyz[14])
+        joint_angles[8] = angle(joint_xyz[13], joint_xyz[14], joint_xyz[15])
+
+        # Fourth finger, pinky
+        joint_angles[9] = angle(joint_xyz[0], joint_xyz[17], joint_xyz[20])
+        joint_angles[10] = angle(joint_xyz[13], joint_xyz[17], joint_xyz[18])
+        joint_angles[11] = angle(joint_xyz[17], joint_xyz[18], joint_xyz[19])
+
+        # Thumb, bit of a guess for basal rotation might be better automatic
+        joint_angles[12] = angle(joint_xyz[1], joint_xyz[2], joint_xyz[3])
+        joint_angles[13] = angle(joint_xyz[2], joint_xyz[1], joint_xyz[5])
+        joint_angles[14] = angle(joint_xyz[2], joint_xyz[3], joint_xyz[4])
+        joint_angles[15] = angle(joint_xyz[9], joint_xyz[5], joint_xyz[2])
+
+        for x in range(16, 23):
+            joint_angles[x] = 123
+
+        # Convert to int before sending over serial, increase value first to offset lost resolution
+        #joint_angles = joint_angles * 10
+        joint_angles = joint_angles.astype(int)
+        #joint_angles = joint_angles.astype(bytes)
+        print(joint_angles)
+
+
+
+        # Generate checksum
+        sum = np.sum(joint_angles)
+        sum = sum & 0x000000FF
+        t_xchecksum = 255 - sum
+        #print(sum, t_xchecksum)
+
+        #t_xchecksum = chr(t_xchecksum)
+        #t_xchecksum = t_xchecksum & 0x000000FF
+        #print(sum, t_xchecksum)
+        # choose packing number of and size, e.g. 2h means 2 short integers (2 bytes), f means float
+        #packed_data = struct.pack('2B', joint_angles[0], joint_angles[1])
+
+        #delay = 0.0001
+
+        # Initialise bus with two A
+        command = B'\xFE'
+        ser.write(command)
+        ser.write(command)
+        packed_data = struct.pack('23B', *joint_angles)
+        ser.write(packed_data)
+        #packed_data = struct.pack('B', t_xchecksum)
+        #ser.write(packed_data)
+        #ser.flushOutput()
+
+        #print(ser.out_waiting)
+
+        #time.sleep(delay)
+
+
+
+        #packed_data = struct.pack('2B', joint_angles[0], joint_angles[1])
+        #ser.write(packed_data)
+        #ser.flushOutput()
+
+        #time.sleep(delay)
+
+        #packed_data = struct.pack('2B', joint_angles[2], joint_angles[3])
+        #ser.write(packed_data)
+        #ser.flushOutput()
+        #time.sleep(delay)
+
+        #packed_data = struct.pack('2B', joint_angles[4], joint_angles[5])
+        #ser.write(packed_data)
+        #ser.flushOutput()
+        #time.sleep(delay)
+
+        #packed_data = struct.pack('2B', joint_angles[6], joint_angles[7])
+        #ser.write(packed_data)
+        #ser.flushOutput()
+        #time.sleep(delay)
+
+        #packed_data = struct.pack('2B', joint_angles[8], joint_angles[9])
+        #ser.write(packed_data)
+        #ser.flushOutput()
+        #time.sleep(delay)
+
+        #packed_data = struct.pack('2B', joint_angles[10], joint_angles[11])
+        #ser.write(packed_data)
+        #ser.flushOutput()
+        #time.sleep(delay)
+
+        #packed_data = struct.pack('2B', joint_angles[12], joint_angles[13])
+        #ser.write(packed_data)
+        #ser.flushOutput()
+        #time.sleep(delay)
+
+        #packed_data = struct.pack('2B', joint_angles[14], joint_angles[15])
+        #ser.write(packed_data)
+        #ser.flushOutput()
+        #time.sleep(delay)
+
+
+
+        # End bus with check sum and two B
+        ser.write(struct.pack('B', t_xchecksum))
+        command = B'\xFD'
+        ser.write(command)
+        ser.write(command)
+
+        #time.sleep(delay)
+
+        ser.flushOutput()
 
         if self.tracker.use_lm:
             # (info_ref_x, info_ref_y): coords in the image of a reference point 

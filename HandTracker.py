@@ -71,9 +71,9 @@ class HandTracker:
                 use_lm=True,
                 lm_model="lite",
                 lm_score_thresh=0.5,
-                use_world_landmarks=False,
+                use_world_landmarks=True,
                 solo=False,
-                xyz=False,
+                xyz=True,
                 crop=False,
                 internal_fps=23,
                 resolution="full",
@@ -119,7 +119,7 @@ class HandTracker:
             self.max_hands = 20
         self.xyz = False
         self.crop = crop 
-        self.use_world_landmarks = use_world_landmarks
+        self.use_world_landmarks = use_world_landmarks #True
         self.internal_fps = internal_fps     
         self.stats = stats
         self.trace = trace

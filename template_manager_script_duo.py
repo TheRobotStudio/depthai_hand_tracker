@@ -9,6 +9,7 @@ sqn_ : normalized [0:1] coordinates in squared input image
 import marshal
 from math import sin, cos, atan2, pi, degrees, floor, dist
 from re import T
+from typing import Dict, Any
 
 pad_h = ${_pad_h}
 img_h = ${_img_h}
@@ -173,7 +174,7 @@ while True:
         nb_lm_inf += 1
         ${_TRACE2} (f"Manager sent config to pre_lm manip (reuse previous frame = {reuse_prev_image})")
 
-    hand_landmarks = dict([("lm_score", []), ("handedness", []), ("rotation", []),
+    hand_landmarks: dict[Any, Any] = dict([("lm_score", []), ("handedness", []), ("rotation", []),
                      ("rect_center_x", []), ("rect_center_y", []), ("rect_size", []), ("rrn_lms", []), ('sqn_lms', []),
                      ("world_lms", []), ("xyz", []), ("xyz_zone", [])])
 
