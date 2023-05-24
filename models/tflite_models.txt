@@ -1,0 +1,8 @@
+Palm detection model:
+- palm_detection.tflite : mediapipe tag 0.8.0 04/11/2020 size: 3877888
+
+Landmark models:
+- hand_landmark_080.tflite: mediapipe tag 0.8.0 04/11/2020 size: 3792620
+- hand_landmark_full.tflite: mediapipe 18/10/2021 size: 5478688
+- hand_landmark_lite.tflite: mediapipe 18/10/2021 size: 2071408
+- hand_landmark_sparse.tflite: mediapipe 18/10/2021 size: 2175808

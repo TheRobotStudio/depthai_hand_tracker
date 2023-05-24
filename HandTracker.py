@@ -421,13 +421,15 @@ class HandTracker:
         if hand.lm_score > self.lm_score_thresh:  
             hand.handedness = inference.getLayerFp16("Identity_2")[0]
             lm_raw = np.array(inference.getLayerFp16("Identity_dense/BiasAdd/Add")).reshape(-1,3)
-            # hand.norm_landmarks contains the normalized ([0:1]) 3D coordinates of landmarks in the square rotated body bounding box
+            # hand.norm_landmarks contains the normalized ([0:1]) 3D coordinates of landmarks in the square rotated
+            # body bounding box
             hand.norm_landmarks = lm_raw / self.lm_input_length
             # hand.norm_landmarks[:,2] /= 0.4
 
             # Now calculate hand.landmarks = the landmarks in the image coordinate system (in pixel)
             src = np.array([(0, 0), (1, 0), (1, 1)], dtype=np.float32)
-            dst = np.array([ (x, y) for x,y in hand.rect_points[1:]], dtype=np.float32) # hand.rect_points[0] is left bottom point and points going clockwise!
+            dst = np.array([ (x, y) for x,y in hand.rect_points[1:]], dtype=np.float32)
+            # hand.rect_points[0] is left bottom point and points going clockwise!
             mat = cv2.getAffineTransform(src, dst)
             lm_xy = np.expand_dims(hand.norm_landmarks[:,:2], axis=0)
             # lm_z = hand.norm_landmarks[:,2:3] * hand.rect_w_a  / 0.4

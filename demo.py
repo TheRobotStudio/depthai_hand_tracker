@@ -78,13 +78,13 @@ renderer = HandTrackerRenderer(
         output=args.output)
 
 while True:
-    # Run hand tracker on next frame
-    # 'bag' contains some information related to the frame 
+    # 'bag' contains some information related to the frame
     # and not related to a particular hand like body keypoints in Body Pre Focusing mode
     # Currently 'bag' contains meaningful information only when Body Pre Focusing is used
     frame, hands, bag = tracker.next_frame()
     if frame is None: break
     # Draw hands
+    #angle = HandAngles.fingerAngles()
     frame = renderer.draw(frame, hands, bag)
     key = renderer.waitKey(delay=1)
     if key == 27 or key == ord('q'):

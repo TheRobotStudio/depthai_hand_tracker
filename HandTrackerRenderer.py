@@ -1,9 +1,9 @@
 import time
+from copy import deepcopy
 
 import cv2
 import numpy as np
-
-from struct import *
+import math
 import struct
 import serial
 
@@ -13,7 +13,7 @@ from mediapipe_utils import angle
 
 # configure the serial connections (the parameters differs on the device you are connecting to)
 ser = serial.Serial(
-    port="COM15",
+    port="COM4",
     baudrate=115200,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
@@ -111,7 +111,8 @@ class HandTrackerRenderer:
         joint_angles = np.zeros(23)
 
         # First finger, fore or index
-        # Angles calculated correspond to knuckle flex, knuckle yaw and long tendon length for all fingers, note difference in knuckle yaw for little
+        # Angles calculated correspond to knuckle flex, knuckle yaw and long tendon length for all fingers,
+        # note difference in knuckle yaw for little
         joint_angles[0] = angle(joint_xyz[0], joint_xyz[5], joint_xyz[8])
         joint_angles[1] = angle(joint_xyz[9], joint_xyz[5], joint_xyz[6])
         joint_angles[2] = angle(joint_xyz[5], joint_xyz[6], joint_xyz[7])
@@ -136,9 +137,41 @@ class HandTrackerRenderer:
         joint_angles[13] = angle(joint_xyz[2], joint_xyz[1], joint_xyz[5])
         joint_angles[14] = angle(joint_xyz[2], joint_xyz[3], joint_xyz[4])
         joint_angles[15] = angle(joint_xyz[9], joint_xyz[5], joint_xyz[2])
+        #down = [x[:] for x in joint_xyz[0]]
+        down = deepcopy(joint_xyz[0])
+        #print(down, joint_xyz[0])
+        down[2] = down[2] - 0.1
+        #print(down, joint_xyz[0])
+        joint_angles[16] = angle(joint_xyz[9], joint_xyz[0], down)
+        joint_angles[16] = np.clip(joint_angles[16], 0, 180)
+        #print(joint_angles[16])
 
-        for x in range(16, 23):
-            joint_angles[x] = 123
+        joint_angles[17] = math.degrees(hand.rotation) + 45
+        #print(joint_angles[17])
+        joint_angles[17] = np.clip(joint_angles[17], 0, 90)
+
+        towards = deepcopy(joint_xyz[17])
+        towards[2] = towards[2] - 0.1
+        joint_angles[18] = angle(joint_xyz[5], joint_xyz[17], towards)
+        joint_angles[18] = np.clip(joint_angles[18], 0, 180)
+        print(joint_angles[16], joint_angles[17], joint_angles[18])
+
+        # Prvents serial empty errors during development
+        #for x in range(19, 23):
+        #    joint_angles[x] = 123
+
+        # For shoulder there is only the xyz of the wrist for now, need the holistic mediapipe model.
+        # Shoulder pitch
+        joint_angles[19] = 123
+
+        # Shoulder Yaw
+        joint_angles[20] = 123
+
+        # Shoulder Roll
+        joint_angles[21] = 123
+
+        # ELbow
+        joint_angles[22] = 123
 
         # Convert to int before sending over serial, increase value first to offset lost resolution
         #joint_angles = joint_angles * 10
@@ -146,6 +179,13 @@ class HandTrackerRenderer:
         #joint_angles = joint_angles.astype(bytes)
         print(joint_angles)
 
+        #print(hand.world_landmarks[9, 1], hand.world_landmarks[0, 1],
+        # hand.world_landmarks[9, 2], hand.world_landmarks[0, 2])
+        #delta_y = hand.world_landmarks[9, 1] - hand.world_landmarks[0, 1]
+        #delta_z = hand.world_landmarks[9, 2] - hand.world_landmarks[0, 2]
+        #print(math.degrees(math.atan(delta_y / delta_z)))
+        #print(math.degrees(hand.rotation))
+        #print(math.degrees(math.atan(1)))
 
 
         # Generate checksum
